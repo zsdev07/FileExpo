@@ -26,7 +26,7 @@ dependencies:
   googleapis: ^13.1.0
   google_sign_in: ^6.2.1
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
-  ftpconnect: ^2.5.0
+  ftpconnect: ^2.0.10
   network_info_plus: ^5.0.1
   http: ^1.2.1
   local_auth: ^2.1.6
