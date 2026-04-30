@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'package:flutter_device_apps/flutter_device_apps.dart';
 import 'package:flutter/foundation.dart';
+import 'package:installed_apps/installed_apps.dart';
+import 'package:installed_apps/app_info.dart';
 import 'package:path/path.dart' as p;
 
 class AppService extends ChangeNotifier {
@@ -14,13 +15,11 @@ class AppService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _apps = await FlutterDeviceApps.listApps(
-      includeSystem: true,
-      onlyLaunchable: true,
-      includeIcons: true,
+    _apps = await InstalledApps.getInstalledApps(
+      excludeSystemApps: false,
+      withIcon: true,
     );
-    _apps.sort((a, b) =>
-        (a.appName ?? '').toLowerCase().compareTo((b.appName ?? '').toLowerCase()));
+    _apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     _isLoading = false;
     notifyListeners();
@@ -28,19 +27,26 @@ class AppService extends ChangeNotifier {
 
   Future<void> backupApp(AppInfo app) async {
     try {
-      if (app.apkPath == null) return;
-      final apkFile = File(app.apkPath!);
+      // Get APK path via `pm path <packageName>`
+      final result = await Process.run('pm', ['path', app.packageName]);
+      final output = result.stdout as String; // e.g. "package:/data/app/...apk"
+      final apkPath = output.trim().replaceFirst('package:', '');
+      if (apkPath.isEmpty) return;
+
+      final apkFile = File(apkPath);
       final backupDir = Directory('/storage/emulated/0/FileExpo/Backups');
       if (!await backupDir.exists()) await backupDir.create(recursive: true);
 
-      final backupPath = p.join(backupDir.path, '${app.appName}_${app.versionName}.apk');
+      final backupPath = p.join(backupDir.path, '${app.name}_${app.versionName}.apk');
       await apkFile.copy(backupPath);
     } catch (e) {
       debugPrint('Error backing up app: $e');
     }
   }
 
-  void uninstallApp(String packageName) {
-    FlutterDeviceApps.uninstallApp(packageName);
+  Future<void> uninstallApp(String packageName) async {
+    // Trigger system uninstall dialog via Uri
+    await Process.run('am', ['start', '-a', 'android.intent.action.DELETE',
+        '-d', 'package:$packageName']);
   }
 }
