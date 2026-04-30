@@ -39,9 +39,7 @@ class _AppManagerScreenState extends State<AppManagerScreen> {
               itemBuilder: (context, index) {
                 final app = appService.apps[index];
                 return ListTile(
-                  leading: app.icon != null
-                      ? Image.memory(app.icon!, width: 40)
-                      : const Icon(Icons.android),
+                  leading: const Icon(Icons.android),
                   title: Text(app.name),
                   subtitle: Text('${app.packageName} (${app.versionName})'),
                   trailing: PopupMenuButton(
