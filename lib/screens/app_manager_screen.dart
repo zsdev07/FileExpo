@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:device_apps/device_apps.dart';
+import 'package:flutter_device_apps/flutter_device_apps.dart';
 import '../services/app_service.dart';
 
 class AppManagerScreen extends StatefulWidget {
@@ -38,10 +38,10 @@ class _AppManagerScreenState extends State<AppManagerScreen> {
               itemBuilder: (context, index) {
                 final app = appService.apps[index];
                 return ListTile(
-                  leading: app is ApplicationWithIcon 
-                      ? Image.memory(app.icon, width: 40)
+                  leading: app.icon != null
+                      ? Image.memory(app.icon!, width: 40)
                       : const Icon(Icons.android),
-                  title: Text(app.appName),
+                  title: Text(app.appName ?? app.packageName ?? ''),
                   subtitle: Text('${app.packageName} (${app.versionName})'),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
@@ -52,14 +52,14 @@ class _AppManagerScreenState extends State<AppManagerScreen> {
                       if (value == 'backup') {
                         appService.backupApp(app);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Backup saved to FileExpo/Backups')),
+                          const SnackBar(content: Text('Backup saved to FileExpo/Backups')),
                         );
                       } else if (value == 'uninstall') {
-                        appService.uninstallApp(app.packageName);
+                        appService.uninstallApp(app.packageName ?? '');
                       }
                     },
                   ),
-                  onTap: () => DeviceApps.openApp(app.packageName),
+                  onTap: () => FlutterDeviceApps.openApp(app.packageName ?? ''),
                 );
               },
             ),
