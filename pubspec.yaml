@@ -19,7 +19,7 @@ dependencies:
   share_plus: ^7.2.2
   archive: ^3.4.10
   fl_chart: ^0.66.0
-  flutter_device_apps: ^0.6.0
+  installed_apps: ^1.4.0
   package_info_plus: ^6.0.0
   shelf: ^1.4.1
   shelf_static: ^1.1.2
