@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import '../services/file_service.dart';
 import '../services/tab_service.dart';
-import 'editor_screen.dart';
-import 'gallery_screen.dart';
-import 'player_screen.dart';
-import 'video_player_screen.dart';
-import 'pdf_viewer_screen.dart';
+import '../screens/editor_screen.dart';
+import '../screens/gallery_screen.dart';
+import '../screens/player_screen.dart';
+import '../screens/video_player_screen.dart';
+import '../screens/pdf_viewer_screen.dart';
 
 class ExplorerPane extends StatelessWidget {
   final int tabIndex;
