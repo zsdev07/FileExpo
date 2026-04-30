@@ -7,7 +7,7 @@ import '../models/storage_node.dart';
 class CloudService extends ChangeNotifier {
   GoogleSignInAccount? _currentUser;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [drive.DriveApi.driveFileScope, drive.DriveApi.driveReadOnlyScope],
+    scopes: [drive.DriveApi.driveFileScope, drive.DriveApi.driveMetadataReadonlyScope],
   );
 
   GoogleSignInAccount? get currentUser => _currentUser;
