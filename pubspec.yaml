@@ -25,7 +25,7 @@ dependencies:
   shelf_static: ^1.1.2
   googleapis: ^13.1.0
   google_sign_in: ^6.2.1
-  extension_google_sign_in_as_googleapis_auth: ^3.0.0
+  extension_google_sign_in_as_googleapis_auth: ">=2.0.0 <2.0.13"
   ftpconnect: ^2.0.8
   network_info_plus: ^5.0.1
   http: ^1.2.1
