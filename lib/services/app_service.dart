@@ -15,10 +15,8 @@ class AppService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _apps = await InstalledApps.getInstalledApps(
-      excludeSystemApps: false,
-      withIcon: true,
-    );
+    // positional args: excludeSystemApps, withIcon
+    _apps = await InstalledApps.getInstalledApps(false, true);
     _apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     _isLoading = false;
@@ -27,10 +25,8 @@ class AppService extends ChangeNotifier {
 
   Future<void> backupApp(AppInfo app) async {
     try {
-      // Get APK path via `pm path <packageName>`
       final result = await Process.run('pm', ['path', app.packageName]);
-      final output = result.stdout as String; // e.g. "package:/data/app/...apk"
-      final apkPath = output.trim().replaceFirst('package:', '');
+      final apkPath = (result.stdout as String).trim().replaceFirst('package:', '');
       if (apkPath.isEmpty) return;
 
       final apkFile = File(apkPath);
@@ -45,7 +41,6 @@ class AppService extends ChangeNotifier {
   }
 
   Future<void> uninstallApp(String packageName) async {
-    // Trigger system uninstall dialog via Uri
     await Process.run('am', ['start', '-a', 'android.intent.action.DELETE',
         '-d', 'package:$packageName']);
   }
