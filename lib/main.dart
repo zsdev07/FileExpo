@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 import 'screens/main_navigation.dart';
 import 'services/file_service.dart';
 import 'services/tab_service.dart';
@@ -11,7 +13,9 @@ import 'services/network_service.dart';
 import 'services/web_server_service.dart';
 import 'services/security_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _requestPermissions();
   runApp(
     MultiProvider(
       providers: [
@@ -28,6 +32,17 @@ void main() {
       child: const FileExpoApp(),
     ),
   );
+}
+
+Future<void> _requestPermissions() async {
+  if (Platform.isAndroid) {
+    // Android 11+ needs MANAGE_EXTERNAL_STORAGE via special settings page
+    if (await Permission.manageExternalStorage.isDenied) {
+      await Permission.manageExternalStorage.request();
+    }
+    // Fallback for Android 10 and below
+    await Permission.storage.request();
+  }
 }
 
 class FileExpoApp extends StatelessWidget {
