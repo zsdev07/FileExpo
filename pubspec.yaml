@@ -3,7 +3,7 @@ description: A simple and feature-rich Android file explorer.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -25,7 +25,7 @@ dependencies:
   shelf_static: ^1.1.2
   googleapis: ^13.1.0
   google_sign_in: ^6.2.1
-  extension_google_sign_in_as_googleapis_auth: ">=2.0.0 <2.0.13"
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
   ftpconnect: ^2.0.7
   network_info_plus: ^5.0.1
   http: ^1.2.0
