@@ -37,7 +37,7 @@ class NetworkService extends ChangeNotifier {
         id: f.name, // In FTP list, name is usually used for path navigation
         name: f.name,
         isDirectory: f.type == FTPEntryType.DIR,
-        size: f.size,
+        size: f.size ?? 0,
         modified: f.modifyTime ?? DateTime.now(),
         source: StorageSource.ftp,
       )).toList();
