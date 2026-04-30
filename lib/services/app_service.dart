@@ -16,7 +16,7 @@ class AppService extends ChangeNotifier {
     notifyListeners();
 
     // positional args: excludeSystemApps, withIcon
-    _apps = await InstalledApps.getInstalledApps(false, true);
+    _apps = await InstalledApps.getInstalledApps(false, false);
     _apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     _isLoading = false;
