@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_device_apps/flutter_device_apps.dart';
+import 'package:installed_apps/installed_apps.dart';
+import 'package:installed_apps/app_info.dart';
 import '../services/app_service.dart';
 
 class AppManagerScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _AppManagerScreenState extends State<AppManagerScreen> {
                   leading: app.icon != null
                       ? Image.memory(app.icon!, width: 40)
                       : const Icon(Icons.android),
-                  title: Text(app.appName ?? app.packageName ?? ''),
+                  title: Text(app.name),
                   subtitle: Text('${app.packageName} (${app.versionName})'),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
@@ -55,11 +56,11 @@ class _AppManagerScreenState extends State<AppManagerScreen> {
                           const SnackBar(content: Text('Backup saved to FileExpo/Backups')),
                         );
                       } else if (value == 'uninstall') {
-                        appService.uninstallApp(app.packageName ?? '');
+                        appService.uninstallApp(app.packageName);
                       }
                     },
                   ),
-                  onTap: () => FlutterDeviceApps.openApp(app.packageName ?? ''),
+                  onTap: () => InstalledApps.startApp(app.packageName),
                 );
               },
             ),
