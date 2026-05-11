@@ -23,21 +23,24 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle' # Automatically caches Gradle dependencies to speed up future builds
 
-      # 3. Grant execution permissions to the Gradle Wrapper
+      # 3. GENERATE THE MISSING GRADLE WRAPPER (AGP 8.2.0 requires Gradle 8.4+)
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.4
+
+      # 4. Grant execution permissions to the Gradle Wrapper
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. Build the Debug APK
+      # 5. Build the Debug APK
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      # 5. Build the Release APK (Unsigned)
+      # 6. Build the Release APK (Unsigned)
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
 
-      # 6. Upload Debug APK as a GitHub Artifact
+      # 7. Upload Debug APK as a GitHub Artifact
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -45,7 +48,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
 
-      # 7. Upload Unsigned Release APK as a GitHub Artifact
+      # 8. Upload Unsigned Release APK as a GitHub Artifact
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
