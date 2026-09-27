@@ -14,7 +14,7 @@ jobs:
 
       - name: Extract FileExpo.zip
         run: |
-          unzip FileExpo.zip -d extracted_content
+          unzip FileExpo.zip -d .
           rm FileExpo.zip # Optional: remove the zip file after extraction
 
       - name: Commit and push changes
