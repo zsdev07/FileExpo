@@ -1,0 +1,18 @@
+name: Bulk Delete Workflow Runs
+on:
+  workflow_dispatch: # Allows you to trigger this manually from the Actions tab
+
+jobs:
+  delete-runs:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Delete all workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0          # Keeps 0 days of history (deletes everything)
+          keep_minimum_runs: 0    # Does not preserve any recent runs
