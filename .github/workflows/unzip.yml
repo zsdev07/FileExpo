@@ -1,0 +1,26 @@
+name: Unzip FileExpo
+
+on:
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit changes back to the repo
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract FileExpo.zip
+        run: |
+          unzip FileExpo.zip -d extracted_content
+          rm FileExpo.zip # Optional: remove the zip file after extraction
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "Automatically unzip FileExpo.zip"
+          git push
