@@ -155,9 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         key: _scaffoldKey,
-        appBar: _searching
-            ? SearchTopBar(
-                controller: _searchController,
+        appBar: _buildAppBar(),
                 onChanged: (value) => setState(() => _query = value),
                 onClose: _exitSearch,
               )
@@ -204,6 +202,30 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+/// Typed as [PreferredSizeWidget] explicitly — a `_searching ? A : B`
+/// expression inline in `Scaffold(appBar: ...)` gets inferred by Dart as
+/// their common `Widget` supertype (not the shared `PreferredSizeWidget`
+/// interface), which `Scaffold.appBar` then rejects. Returning it from a
+/// method with an explicit return type sidesteps that inference.
+PreferredSizeWidget _buildAppBar() {
+  if (_searching) {
+    return SearchTopBar(
+      controller: _searchController,
+      onChanged: (value) => setState(() => _query = value),
+      onClose: _exitSearch,
+    );
+  }
+  return AppTopBar(
+    title: 'My Files',
+    subtitle: _loading
+        ? 'Loading…'
+        : '${_entries.length} item${_entries.length == 1 ? '' : 's'}',
+    onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+    onSearchTap: _enterSearch,
+    onMoreTap: () {},
+  );
+}
 
   Widget _buildBody(BuildContext context) {
     if (_loading) {
