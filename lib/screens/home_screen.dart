@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import '../data/file_repository.dart';
 import '../data/real_file_repository.dart';
 import '../models/storage_entry.dart';
+import '../services/clipboard_service.dart';
+import '../services/file_operations_service.dart';
 import '../services/storage_access_service.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/breadcrumb_bar.dart';
+import '../widgets/file_context_sheet.dart';
+import '../widgets/paste_bar.dart';
+import '../widgets/search_top_bar.dart';
 import '../widgets/storage_entry_tile.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,7 +22,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FileRepository _repository = RealFileRepository();
   final _storageService = StorageAccessService();
+  final _fileOps = FileOperationsService();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _searchController = TextEditingController();
 
   /// Every directory from the storage root down to the current one, so
   /// breadcrumb taps can jump straight back to any ancestor.
@@ -26,10 +33,19 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   String? _error;
 
+  bool _searching = false;
+  String _query = '';
+
   @override
   void initState() {
     super.initState();
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _bootstrap() async {
@@ -61,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openFolder(StorageEntry entry) {
+    _exitSearch();
     setState(() => _pathStack = [..._pathStack, entry.path]);
     _load();
   }
@@ -71,8 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _load();
   }
 
-  /// True if the device back button should exit the app instead of
-  /// navigating up a folder.
   bool get _atRoot => _pathStack.length <= 1;
 
   void _goUp() {
@@ -90,40 +105,99 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  List<StorageEntry> get _visibleEntries {
+    if (!_searching || _query.trim().isEmpty) return _entries;
+    final q = _query.toLowerCase();
+    return _entries.where((e) => e.name.toLowerCase().contains(q)).toList();
+  }
+
+  void _enterSearch() => setState(() => _searching = true);
+
+  void _exitSearch() {
+    if (!_searching) return;
+    setState(() {
+      _searching = false;
+      _query = '';
+      _searchController.clear();
+    });
+  }
+
+  Future<void> _handlePaste() async {
+    final clip = ClipboardService.instance.entry;
+    if (clip == null) return;
+    final destDir = _pathStack.last;
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      if (clip.isCut) {
+        await _fileOps.move(clip.path, destDir);
+      } else {
+        await _fileOps.copy(clip.path, destDir);
+      }
+      ClipboardService.instance.clear();
+      await _load();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text("Couldn't paste: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _atRoot,
+      canPop: _atRoot && !_searching,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _goUp();
+        if (didPop) return;
+        if (_searching) {
+          _exitSearch();
+        } else {
+          _goUp();
+        }
       },
       child: Scaffold(
         key: _scaffoldKey,
-        appBar: AppTopBar(
-          title: 'My Files',
-          subtitle: _loading
-              ? 'Loading…'
-              : '${_entries.length} item${_entries.length == 1 ? '' : 's'}',
-          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-          onSearchTap: () {
-            // TODO: smart search filters (type/extension/size/date).
-          },
-          onMoreTap: () {},
-        ),
+        appBar: _searching
+            ? SearchTopBar(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+                onClose: _exitSearch,
+              )
+            : AppTopBar(
+                title: 'My Files',
+                subtitle: _loading
+                    ? 'Loading…'
+                    : '${_entries.length} item${_entries.length == 1 ? '' : 's'}',
+                onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                onSearchTap: _enterSearch,
+                onMoreTap: () {},
+              ),
         drawer: const _AppDrawer(),
         body: Column(
           children: [
-            BreadcrumbBar(
-              segments: _breadcrumbSegments,
-              onSegmentTap: _jumpToBreadcrumb,
-            ),
-            const SizedBox(height: 4),
+            if (!_searching) ...[
+              BreadcrumbBar(
+                segments: _breadcrumbSegments,
+                onSegmentTap: _jumpToBreadcrumb,
+              ),
+              const SizedBox(height: 4),
+            ],
             Expanded(child: _buildBody(context)),
+            ListenableBuilder(
+              listenable: ClipboardService.instance,
+              builder: (context, _) {
+                final clip = ClipboardService.instance.entry;
+                if (clip == null) return const SizedBox.shrink();
+                return PasteBar(
+                  entry: clip,
+                  onPaste: _handlePaste,
+                  onCancel: ClipboardService.instance.clear,
+                );
+              },
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            // TODO: create folder / paste / new file sheet.
+            // TODO: create folder / new file sheet.
           },
           child: const Icon(Icons.add_rounded),
         ),
@@ -138,19 +212,28 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_error != null) {
       return _MessageState(icon: Icons.lock_outline_rounded, message: _error!);
     }
+
+    final visible = _visibleEntries;
     if (_entries.isEmpty) {
       return const _MessageState(
         icon: Icons.folder_off_rounded,
         message: 'Nothing here yet',
       );
     }
+    if (_searching && visible.isEmpty) {
+      return _MessageState(
+        icon: Icons.search_off_rounded,
+        message: 'No matches for "$_query"',
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 88),
-        itemCount: _entries.length,
+        itemCount: visible.length,
         itemBuilder: (context, index) {
-          final entry = _entries[index];
+          final entry = visible[index];
           return StorageEntryTile(
             entry: entry,
             onTap: () {
@@ -164,6 +247,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
             },
+            onLongPress: () => showFileContextSheet(
+              context: context,
+              entry: entry,
+              onChanged: _load,
+            ),
           );
         },
       ),
