@@ -8,10 +8,6 @@ name: Build APK (arm64)
 #   - You can also trigger it manually any time from the Actions tab
 #     ("Run workflow" button) — works fine from the GitHub mobile app too.
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
