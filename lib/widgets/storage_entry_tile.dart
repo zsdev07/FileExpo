@@ -7,6 +7,11 @@ class StorageEntryTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
+  /// When true, a checkbox is shown next to the icon and [selected]
+  /// controls whether it's checked (multi-select mode).
+  final bool selectionMode;
+  final bool selected;
+
   static final _dateFormat = DateFormat('dd-MMM-yyyy, h:mm a');
 
   const StorageEntryTile({
@@ -14,6 +19,8 @@ class StorageEntryTile extends StatelessWidget {
     required this.entry,
     this.onTap,
     this.onLongPress,
+    this.selectionMode = false,
+    this.selected = false,
   });
 
   @override
@@ -24,15 +31,26 @@ class StorageEntryTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: entry.iconBackground,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(entry.icon, color: Colors.white, size: 22),
+      selected: selected,
+      selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.25),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (selectionMode) ...[
+            Checkbox(value: selected, onChanged: (_) => onTap?.call()),
+            const SizedBox(width: 4),
+          ],
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: entry.iconBackground,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(entry.icon, color: Colors.white, size: 22),
+          ),
+        ],
       ),
       title: Text(
         entry.name,
