@@ -8,6 +8,7 @@ import '../services/archive_service.dart';
 import '../services/clipboard_service.dart';
 import '../services/file_operations_service.dart';
 import '../services/storage_access_service.dart';
+import '../utils/file_kind.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/clipboard_status_bar.dart';
@@ -16,6 +17,10 @@ import '../widgets/search_top_bar.dart';
 import '../widgets/selection_action_bar.dart';
 import '../widgets/selection_top_bar.dart';
 import '../widgets/storage_entry_tile.dart';
+import 'viewers/audio_viewer_screen.dart';
+import 'viewers/image_viewer_screen.dart';
+import 'viewers/text_viewer_screen.dart';
+import 'viewers/video_viewer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -411,6 +416,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openFile(StorageEntry entry) {
+    switch (FileKindResolver.resolve(entry.name)) {
+      case FileKind.image:
+        final images = _entries
+            .where((e) =>
+                !e.isFolder && FileKindResolver.resolve(e.name) == FileKind.image)
+            .toList();
+        final index = images.indexWhere((e) => e.path == entry.path);
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ImageViewerScreen(
+            images: images,
+            initialIndex: index < 0 ? 0 : index,
+          ),
+        ));
+        break;
+      case FileKind.video:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => VideoViewerScreen(path: entry.path, title: entry.name),
+        ));
+        break;
+      case FileKind.audio:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => AudioViewerScreen(path: entry.path, title: entry.name),
+        ));
+        break;
+      case FileKind.text:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => TextViewerScreen(path: entry.path, title: entry.name),
+        ));
+        break;
+      case FileKind.other:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Can't preview this file type yet — long-press it and use Share to open it elsewhere.",
+            ),
+          ),
+        );
+    }
+  }
+
   // --- Clipboard / paste ------------------------------------------------
 
   Future<void> _handlePaste() async {
@@ -622,11 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (entry.isFolder) {
                 _openFolder(entry);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Built-in viewers are coming in a later step'),
-                  ),
-                );
+                _openFile(entry);
               }
             },
             onLongPress: () => _toggleSelect(entry),
