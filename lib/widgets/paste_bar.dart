@@ -1,46 +1,61 @@
 import 'package:flutter/material.dart';
-import '../services/clipboard_service.dart';
 
+/// Bottom pill offering to paste the pending clipboard selection into the
+/// current folder, plus a quick "new folder here" shortcut. Lives in
+/// Scaffold's `bottomNavigationBar` slot so the FAB automatically shifts
+/// above it instead of overlapping it.
 class PasteBar extends StatelessWidget {
-  final ClipboardEntry entry;
+  final int count;
   final VoidCallback onPaste;
-  final VoidCallback onCancel;
+  final VoidCallback onNewFolder;
 
   const PasteBar({
     super.key,
-    required this.entry,
+    required this.count,
     required this.onPaste,
-    required this.onCancel,
+    required this.onNewFolder,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.surfaceContainerHigh,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Row(
-            children: [
-              Icon(
-                entry.isCut ? Icons.cut_rounded : Icons.copy_rounded,
-                size: 20,
-                color: scheme.onSurfaceVariant,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        child: Material(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(28),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: onPaste,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.content_paste_rounded, color: scheme.onPrimaryContainer),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      count == 1 ? 'PASTE' : 'PASTE $count ITEMS',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: scheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'New folder here',
+                    icon: Icon(
+                      Icons.create_new_folder_outlined,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                    onPressed: onNewFolder,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '${entry.isCut ? "Move" : "Copy"} "${entry.name}" here',
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-              TextButton(onPressed: onCancel, child: const Text('Cancel')),
-              const SizedBox(width: 4),
-              FilledButton(onPressed: onPaste, child: const Text('Paste')),
-            ],
+            ),
           ),
         ),
       ),
