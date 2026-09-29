@@ -15,38 +15,33 @@ class ClipboardEntry {
   });
 }
 
-/// Holds at most one pending copy/cut target so the "Paste" bar can appear
-/// anywhere in the file browser. Deliberately a plain in-memory singleton —
-/// clipboard contents never need to survive an app restart.
+/// Holds the pending copy/cut selection so a "Paste" bar can appear
+/// anywhere in the file browser. Plain in-memory singleton — clipboard
+/// contents never need to survive an app restart. Supports multiple
+/// entries at once (multi-select Cut/Copy).
 class ClipboardService extends ChangeNotifier {
   ClipboardService._internal();
   static final ClipboardService instance = ClipboardService._internal();
 
-  ClipboardEntry? _entry;
-  ClipboardEntry? get entry => _entry;
+  List<ClipboardEntry> _entries = [];
+  List<ClipboardEntry> get entries => List.unmodifiable(_entries);
+  bool get isEmpty => _entries.isEmpty;
+  int get length => _entries.length;
 
-  void setCopy(StorageEntry source) {
-    _entry = ClipboardEntry(
-      path: source.path,
-      name: source.name,
-      isCut: false,
-      isDirectory: source.isFolder,
-    );
-    notifyListeners();
-  }
-
-  void setCut(StorageEntry source) {
-    _entry = ClipboardEntry(
-      path: source.path,
-      name: source.name,
-      isCut: true,
-      isDirectory: source.isFolder,
-    );
+  void setEntries(List<StorageEntry> sources, {required bool isCut}) {
+    _entries = sources
+        .map((s) => ClipboardEntry(
+              path: s.path,
+              name: s.name,
+              isCut: isCut,
+              isDirectory: s.isFolder,
+            ))
+        .toList();
     notifyListeners();
   }
 
   void clear() {
-    _entry = null;
+    _entries = [];
     notifyListeners();
   }
 }
