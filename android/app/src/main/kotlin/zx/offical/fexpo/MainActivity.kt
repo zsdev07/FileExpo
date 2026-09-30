@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.StatFs
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -18,6 +19,8 @@ import io.flutter.plugin.common.MethodChannel
  *    settings screen to grant it, since permission_handler's generic
  *    `manageExternalStorage` permission maps to this same intent but we
  *    want a direct, explicit path we control.
+ *  - total/free space on primary external storage (via [StatFs]), used by
+ *    the Storage Analyzer screen.
  */
 class MainActivity : FlutterActivity() {
     private val channelName = "zx.offical.fexpo/storage"
@@ -56,6 +59,16 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                         result.success(null)
+                    }
+
+                    "getStorageStats" -> {
+                        val stat = StatFs(Environment.getExternalStorageDirectory().path)
+                        result.success(
+                            mapOf(
+                                "total" to stat.totalBytes,
+                                "free" to stat.freeBytes
+                            )
+                        )
                     }
 
                     else -> result.notImplemented()
