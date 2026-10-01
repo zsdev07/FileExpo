@@ -19,6 +19,21 @@
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
+    <!-- App Manager: seeing every installed app's storage footprint and
+         uninstalling it. Google Play permits QUERY_ALL_PACKAGES for
+         file-manager / app-manager apps, but publishing requires filling
+         out the "All apps" Permissions declaration form in Play Console. -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- "Usage access" — a special permission granted through its own
+         Settings screen (like MANAGE_EXTERNAL_STORAGE above), needed to
+         read each app's real app/data/cache size via StorageStatsManager. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
     <application
         android:label="FileExpo"
         android:name="${applicationName}"
