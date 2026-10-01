@@ -5,17 +5,23 @@ class LargeFileEntry {
   final String path;
   final String name;
   final int size;
+  final DateTime modified;
 
   const LargeFileEntry({
     required this.path,
     required this.name,
     required this.size,
+    required this.modified,
   });
 }
 
 class ScanResult {
   final Map<StorageCategoryKind, int> categoryBytes;
   final Map<StorageCategoryKind, int> categoryCounts;
+
+  /// Every file found in each category (not just the largest) — backs the
+  /// category drill-down screen.
+  final Map<StorageCategoryKind, List<LargeFileEntry>> categoryFiles;
   final List<LargeFileEntry> largestFiles;
   final int scannedBytes;
   final int scannedFiles;
@@ -23,6 +29,7 @@ class ScanResult {
   const ScanResult({
     required this.categoryBytes,
     required this.categoryCounts,
+    required this.categoryFiles,
     required this.largestFiles,
     required this.scannedBytes,
     required this.scannedFiles,
@@ -40,6 +47,9 @@ class StorageScanService {
     };
     final categoryCounts = <StorageCategoryKind, int>{
       for (final k in StorageCategoryKind.values) k: 0,
+    };
+    final categoryFiles = <StorageCategoryKind, List<LargeFileEntry>>{
+      for (final k in StorageCategoryKind.values) k: <LargeFileEntry>[],
     };
     final largest = <LargeFileEntry>[];
     var scannedBytes = 0;
@@ -60,20 +70,28 @@ class StorageScanService {
         if (child is Directory) {
           await walk(child);
         } else if (child is File) {
-          int size;
+          FileStat stat;
           try {
-            size = await child.length();
+            stat = await child.stat();
           } catch (_) {
             continue;
           }
 
           final kind = StorageCategoryResolver.resolve(name);
-          categoryBytes[kind] = (categoryBytes[kind] ?? 0) + size;
+          categoryBytes[kind] = (categoryBytes[kind] ?? 0) + stat.size;
           categoryCounts[kind] = (categoryCounts[kind] ?? 0) + 1;
-          scannedBytes += size;
+          scannedBytes += stat.size;
           scannedFiles++;
 
-          largest.add(LargeFileEntry(path: child.path, name: name, size: size));
+          final fileEntry = LargeFileEntry(
+            path: child.path,
+            name: name,
+            size: stat.size,
+            modified: stat.modified,
+          );
+          categoryFiles[kind]!.add(fileEntry);
+
+          largest.add(fileEntry);
           largest.sort((a, b) => b.size.compareTo(a.size));
           if (largest.length > topFilesLimit) {
             largest.removeRange(topFilesLimit, largest.length);
@@ -87,6 +105,7 @@ class StorageScanService {
     return ScanResult(
       categoryBytes: categoryBytes,
       categoryCounts: categoryCounts,
+      categoryFiles: categoryFiles,
       largestFiles: largest,
       scannedBytes: scannedBytes,
       scannedFiles: scannedFiles,
