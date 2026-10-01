@@ -17,6 +17,7 @@ import '../widgets/search_top_bar.dart';
 import '../widgets/selection_action_bar.dart';
 import '../widgets/selection_top_bar.dart';
 import '../widgets/storage_entry_tile.dart';
+import 'apps_screen.dart';
 import 'storage_analyzer_screen.dart';
 import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
@@ -760,6 +761,11 @@ class _AppDrawer extends StatelessWidget {
           case 1:
             Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => const StorageAnalyzerScreen(),
+            ));
+            break;
+          case 4:
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const AppsScreen(),
             ));
             break;
           default:
