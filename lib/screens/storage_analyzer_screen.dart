@@ -6,6 +6,9 @@ import '../theme/app_colors.dart';
 import '../utils/file_kind.dart';
 import '../utils/file_size_formatter.dart';
 import '../utils/storage_category.dart';
+import 'apps_screen.dart';
+import 'category_files_screen.dart';
+import 'unused_apps_screen.dart';
 import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
 import 'viewers/text_viewer_screen.dart';
@@ -27,6 +30,7 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
   int _totalBytes = 0;
   int _freeBytes = 0;
   ScanResult? _result;
+  bool _expandedLargest = false;
 
   @override
   void initState() {
@@ -67,7 +71,7 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
           type: StorageEntryType.file,
           path: file.path,
           subtitle: FileSizeFormatter.format(file.size),
-          modified: DateTime.now(),
+          modified: file.modified,
           icon: Icons.image_rounded,
           iconBackground: Colors.pink,
         );
@@ -164,7 +168,62 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
                 bytes: result.categoryBytes[kind] ?? 0,
                 count: result.categoryCounts[kind] ?? 0,
                 totalBytes: result.scannedBytes,
+                onTap: () async {
+                  final changed = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute<bool>(
+                      builder: (_) => CategoryFilesScreen(
+                        kind: kind,
+                        label: _categoryLabel(kind),
+                        files: result.categoryFiles[kind] ?? const [],
+                      ),
+                    ),
+                  );
+                  if (changed == true) _run();
+                },
               ),
+          const SizedBox(height: 24),
+          Text('More', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.folderBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.apps_outlined, color: Colors.white, size: 20),
+            ),
+            title: const Text('Apps'),
+            subtitle: const Text('App + data size per app, uninstall'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const AppsScreen(),
+            )),
+          ),
+          _ComingSoonTile(
+            icon: Icons.delete_sweep_outlined,
+            color: AppColors.danger,
+            label: 'Recycle bin',
+            subtitle: 'Recover recently deleted files',
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.deepPurple,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.schedule_outlined, color: Colors.white, size: 20),
+            ),
+            title: const Text('Unused apps'),
+            subtitle: const Text("Apps you haven't opened in a while"),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const UnusedAppsScreen(),
+            )),
+          ),
           const SizedBox(height: 24),
           Text('Largest files', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -173,8 +232,10 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Text('Nothing scanned yet.'),
             )
-          else
-            for (final file in result.largestFiles)
+          else ...[
+            for (final file in _expandedLargest
+                ? result.largestFiles
+                : result.largestFiles.take(4).toList())
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(_categoryIcon(StorageCategoryResolver.resolve(file.name))),
@@ -183,6 +244,15 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
                 trailing: Text(FileSizeFormatter.format(file.size)),
                 onTap: () => _openFile(file),
               ),
+            if (result.largestFiles.length > 4)
+              Center(
+                child: TextButton(
+                  onPressed: () =>
+                      setState(() => _expandedLargest = !_expandedLargest),
+                  child: Text(_expandedLargest ? 'Show less' : 'View more'),
+                ),
+              ),
+          ],
         ],
       ),
     );
@@ -340,18 +410,21 @@ class _CategoryTile extends StatelessWidget {
   final int bytes;
   final int count;
   final int totalBytes;
+  final VoidCallback? onTap;
 
   const _CategoryTile({
     required this.kind,
     required this.bytes,
     required this.count,
     required this.totalBytes,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final percent = totalBytes == 0 ? 0.0 : (bytes / totalBytes * 100);
     return ListTile(
+      onTap: onTap,
       contentPadding: EdgeInsets.zero,
       leading: Container(
         width: 40,
@@ -374,6 +447,56 @@ class _CategoryTile extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Honest placeholder row for a feature that isn't built yet — visibly
+/// disabled rather than pretending to work. Tapping just explains that.
+class _ComingSoonTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String subtitle;
+
+  const _ComingSoonTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Opacity(
+      opacity: 0.55,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        title: Text(label),
+        subtitle: Text(subtitle),
+        trailing: Text(
+          'Soon',
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall
+              ?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Coming soon')),
+          );
+        },
       ),
     );
   }
