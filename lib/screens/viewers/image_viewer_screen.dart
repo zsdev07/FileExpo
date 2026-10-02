@@ -38,6 +38,18 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final current = widget.images[_index];
+
+    // Decode at roughly the screen's physical pixel width instead of the
+    // photo's full resolution (often 3000-4000px+ from a modern camera).
+    // This is what actually fixes the multi-second open delay — the UI
+    // can't show more detail than the screen anyway, so decoding to full
+    // resolution every time was pure wasted work.
+    final cacheWidth =
+        (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio)
+            .round()
+            .clamp(1, 2000)
+            .toInt();
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -60,6 +72,11 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
         controller: _pageController,
         itemCount: widget.images.length,
         onPageChanged: (i) => setState(() => _index = i),
+        // Lets PageView start building the neighbouring pages immediately,
+        // so the next/previous image is already decoding while the
+        // current one is still on screen — swiping feels instant instead
+        // of each swipe triggering a fresh decode.
+        allowImplicitScrolling: true,
         itemBuilder: (context, i) {
           final entry = widget.images[i];
           return InteractiveViewer(
@@ -69,6 +86,7 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
               child: Image.file(
                 File(entry.path),
                 fit: BoxFit.contain,
+                cacheWidth: cacheWidth,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.broken_image_outlined,
                   color: Colors.white54,
