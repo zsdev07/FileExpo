@@ -27,6 +27,12 @@
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <!-- Lets the system's own uninstall confirmation screen actually
+         proceed when we send it an ACTION_DELETE intent. Without this,
+         PackageInstaller's UninstallerActivity silently refuses — which
+         is exactly the "nothing happens, no error" symptom this fixes. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!-- "Usage access" — a special permission granted through its own
          Settings screen (like MANAGE_EXTERNAL_STORAGE above), needed to
          read each app's real app/data/cache size via StorageStatsManager. -->
