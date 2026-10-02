@@ -158,15 +158,25 @@ class MainActivity : FlutterActivity() {
             null
         }
 
-        // One aggregated query across every package's whole history, rather
-        // than one query per app — both cheaper and simpler. Needs the same
+        // One aggregated query across every package's history, rather than
+        // one query per app — both cheaper and simpler. Needs the same
         // "Usage access" grant as the storage stats above.
+        //
+        // Deliberately NOT querying from beginTime=0L: on a lot of real
+        // devices queryAndAggregateUsageStats silently returns an empty
+        // map when given literal epoch-0 as the start (a long-documented
+        // platform quirk, not something that throws), which is exactly
+        // the "every app shows Never recorded" symptom. A large-but-finite
+        // window avoids it.
         val lastUsedMap: Map<String, Long> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val usageStatsManager =
                     getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+                val now = System.currentTimeMillis()
+                val tenYearsMillis = 10L * 365L * 24L * 60L * 60L * 1000L
+                val beginTime = (now - tenYearsMillis).coerceAtLeast(0L)
                 usageStatsManager
-                    ?.queryAndAggregateUsageStats(0L, System.currentTimeMillis())
+                    ?.queryAndAggregateUsageStats(beginTime, now)
                     ?.mapValues { it.value.lastTimeUsed }
                     ?: emptyMap()
             } catch (e: Exception) {
