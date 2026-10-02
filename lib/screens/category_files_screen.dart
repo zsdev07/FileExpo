@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/storage_entry.dart';
 import '../services/file_operations_service.dart';
@@ -34,6 +35,8 @@ class _CategoryFilesScreenState extends State<CategoryFilesScreen> {
   late List<LargeFileEntry> _files;
   final Set<String> _selected = {};
   bool _changed = false;
+
+  bool get _isImagesCategory => widget.kind == StorageCategoryKind.images;
 
   @override
   void initState() {
@@ -164,6 +167,70 @@ class _CategoryFilesScreenState extends State<CategoryFilesScreen> {
     }
   }
 
+  /// Photo-picker-style grid: real thumbnails, a selection circle on every
+  /// cell (not gated behind a separate "selection mode"), tap to toggle,
+  /// long-press to open the full-screen swipe viewer.
+  Widget _buildImageGrid(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GridView.builder(
+      padding: const EdgeInsets.all(4),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemCount: _files.length,
+      itemBuilder: (context, index) {
+        final file = _files[index];
+        final isSelected = _selected.contains(file.path);
+
+        return GestureDetector(
+          onTap: () => _toggle(file),
+          onLongPress: () => _openFile(file),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // A small cacheWidth here is what keeps a 1000+ photo grid
+              // scrolling smoothly — decoding every thumbnail at full
+              // camera resolution is the same mistake that made the
+              // full-screen viewer slow, just multiplied by a grid's
+              // worth of images at once.
+              Image.file(
+                File(file.path),
+                fit: BoxFit.cover,
+                cacheWidth: 200,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade800,
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+              if (isSelected) Container(color: Colors.black.withValues(alpha: 0.35)),
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? scheme.primary : Colors.black.withValues(alpha: 0.4),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selecting = _selected.isNotEmpty;
@@ -204,7 +271,9 @@ class _CategoryFilesScreenState extends State<CategoryFilesScreen> {
         ),
         body: _files.isEmpty
             ? const Center(child: Text('Nothing here'))
-            : ListView.builder(
+            : _isImagesCategory
+                ? _buildImageGrid(context)
+                : ListView.builder(
                 padding: const EdgeInsets.only(bottom: 96),
                 itemCount: _files.length,
                 itemBuilder: (context, index) {
