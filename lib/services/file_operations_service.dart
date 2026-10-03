@@ -69,6 +69,11 @@ class FileOperationsService {
     await Directory(path).create(recursive: true);
   }
 
+  Future<void> createFile(String parentDir, String name) async {
+    final path = await _uniqueDestPath(parentDir, name);
+    await File(path).create(recursive: true);
+  }
+
   Future<void> _copyDirectory(Directory source, Directory dest) async {
     await dest.create(recursive: true);
     await for (final child in source.list(recursive: false)) {
