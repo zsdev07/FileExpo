@@ -13,6 +13,7 @@ import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
 import 'viewers/text_viewer_screen.dart';
 import 'viewers/video_viewer_screen.dart';
+import 'viewers/zip_preview_screen.dart';
 
 class StorageAnalyzerScreen extends StatefulWidget {
   const StorageAnalyzerScreen({super.key});
@@ -92,6 +93,11 @@ class _StorageAnalyzerScreenState extends State<StorageAnalyzerScreen> {
       case FileKind.text:
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => TextViewerScreen(path: file.path, title: file.name),
+        ));
+        break;
+      case FileKind.zipArchive:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ZipPreviewScreen(path: file.path, title: file.name),
         ));
         break;
       case FileKind.other:
