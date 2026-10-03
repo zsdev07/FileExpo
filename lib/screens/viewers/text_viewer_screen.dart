@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'fe_text_editor_screen.dart';
 
 class TextViewerScreen extends StatefulWidget {
   final String path;
@@ -47,10 +48,33 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
     }
   }
 
+  void _openInEditor() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FeTextEditorScreen(path: widget.path, title: widget.title),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(
+        title: Text(widget.title, overflow: TextOverflow.ellipsis),
+        actions: [
+          PopupMenuButton<void>(
+            tooltip: 'More',
+            itemBuilder: (context) => [
+              PopupMenuItem<void>(
+                onTap: _openInEditor,
+                child: const ListTile(
+                  leading: Icon(Icons.edit_outlined),
+                  title: Text('FE Text Editor'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: _error != null
           ? Center(
               child: Padding(
