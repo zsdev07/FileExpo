@@ -10,6 +10,7 @@ import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
 import 'viewers/text_viewer_screen.dart';
 import 'viewers/video_viewer_screen.dart';
+import 'viewers/zip_preview_screen.dart';
 
 /// Lists every file in one storage category, biggest first, with
 /// multi-select delete. Pops with `true` if anything was actually deleted
@@ -158,6 +159,11 @@ class _CategoryFilesScreenState extends State<CategoryFilesScreen> {
       case FileKind.text:
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => TextViewerScreen(path: file.path, title: file.name),
+        ));
+        break;
+      case FileKind.zipArchive:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ZipPreviewScreen(path: file.path, title: file.name),
         ));
         break;
       case FileKind.other:
