@@ -23,6 +23,7 @@ import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
 import 'viewers/text_viewer_screen.dart';
 import 'viewers/video_viewer_screen.dart';
+import 'viewers/zip_preview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -448,6 +449,11 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => TextViewerScreen(path: entry.path, title: entry.name),
         ));
         break;
+      case FileKind.zipArchive:
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ZipPreviewScreen(path: entry.path, title: entry.name),
+        ));
+        break;
       case FileKind.other:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -519,6 +525,96 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _createFile() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create a file'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'File name (e.g. notes.txt)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+
+    try {
+      await _fileOps.createFile(_pathStack.last, name);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Couldn't create file: $e")));
+    }
+  }
+
+  Future<void> _showCreateMenu() {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.note_add_outlined),
+                title: const Text('Create a file'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _createFile();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.create_new_folder_outlined),
+                title: const Text('Create a folder'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _createFolder();
+                },
+              ),
+              Opacity(
+                opacity: 0.55,
+                child: ListTile(
+                  leading: const Icon(Icons.cloud_outlined),
+                  title: const Text('Cloud connection'),
+                  trailing: Text(
+                    'Soon',
+                    style: Theme.of(sheetContext).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cloud connections are coming in a later drop'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // --- Build ------------------------------------------------------
 
   @override
@@ -557,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
           floatingActionButton: _selecting
               ? null
               : FloatingActionButton(
-                  onPressed: _createFolder,
+                  onPressed: _showCreateMenu,
                   child: const Icon(Icons.add_rounded),
                 ),
         ),
