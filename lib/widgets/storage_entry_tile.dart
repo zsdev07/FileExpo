@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/storage_entry.dart';
+import '../services/settings_store.dart';
 
 class StorageEntryTile extends StatelessWidget {
   final StorageEntry entry;
@@ -27,13 +28,19 @@ class StorageEntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final compact = SettingsStore.instance.compactView;
+    final iconSize = compact ? 34.0 : 44.0;
 
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
       selected: selected,
       selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.25),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: compact ? 0 : 4,
+      ),
       leading: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -42,13 +49,13 @@ class StorageEntryTile extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Container(
-            width: 44,
-            height: 44,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: entry.iconBackground,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(compact ? 10 : 14),
             ),
-            child: Icon(entry.icon, color: Colors.white, size: 22),
+            child: Icon(entry.icon, color: Colors.white, size: compact ? 18 : 22),
           ),
         ],
       ),
