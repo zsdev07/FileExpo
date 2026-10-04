@@ -18,6 +18,7 @@ import android.os.Process
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.Settings
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -39,6 +40,8 @@ import java.io.File
  *    sizes (via [StorageStatsManager]) and last-used timestamps (via
  *    [UsageStatsManager]) — both gated behind the same "Usage access"
  *    special permission — and triggering the system uninstall dialog.
+ *  - the APK Installer: wrapping a .apk path as a content:// URI (via
+ *    [FileProvider]) and firing the system's own install confirmation.
  */
 class MainActivity : FlutterActivity() {
     private val channelName = "zx.offical.fexpo/storage"
@@ -129,6 +132,33 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                         result.success(null)
+                    }
+
+                    "installApk" -> {
+                        val path = call.argument<String>("path")
+                        if (path.isNullOrEmpty()) {
+                            result.error("INVALID_ARG", "Missing path", null)
+                        } else {
+                            try {
+                                val apkUri = FileProvider.getUriForFile(
+                                    this,
+                                    "zx.offical.fexpo.fileprovider",
+                                    File(path)
+                                )
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(
+                                        apkUri,
+                                        "application/vnd.android.package-archive"
+                                    )
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                startActivity(intent)
+                                result.success(null)
+                            } catch (e: Exception) {
+                                result.error("INSTALL_FAILED", e.message, null)
+                            }
+                        }
                     }
 
                     else -> result.notImplemented()
