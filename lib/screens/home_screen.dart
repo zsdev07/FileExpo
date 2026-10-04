@@ -8,6 +8,7 @@ import '../services/app_manager_service.dart';
 import '../services/archive_service.dart';
 import '../services/clipboard_service.dart';
 import '../services/file_operations_service.dart';
+import '../services/settings_store.dart';
 import '../services/storage_access_service.dart';
 import '../utils/file_kind.dart';
 import '../widgets/app_top_bar.dart';
@@ -19,6 +20,7 @@ import '../widgets/selection_action_bar.dart';
 import '../widgets/selection_top_bar.dart';
 import '../widgets/storage_entry_tile.dart';
 import 'apps_screen.dart';
+import 'settings/settings_screen.dart';
 import 'storage_analyzer_screen.dart';
 import 'viewers/audio_viewer_screen.dart';
 import 'viewers/image_viewer_screen.dart';
@@ -629,7 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: ClipboardService.instance,
+      listenable: Listenable.merge([ClipboardService.instance, SettingsStore.instance]),
       builder: (context, _) => PopScope(
         canPop: _atRoot && !_searching && !_selecting,
         onPopInvokedWithResult: (didPop, _) {
@@ -871,6 +873,11 @@ class _AppDrawer extends StatelessWidget {
           case 4:
             Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => const AppsScreen(),
+            ));
+            break;
+          case 5:
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const SettingsScreen(),
             ));
             break;
           default:
