@@ -1,4 +1,3 @@
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
@@ -9,18 +8,25 @@ import 'app_colors.dart';
 /// When they are null (Android < 12, or the plugin isn't available yet)
 /// we fall back to a scheme generated from [AppColors.seed], so the app
 /// always ships with its own Purple + Black identity out of the box.
+///
+/// [accentSeed], when non-null, is an explicit accent color chosen in
+/// Settings — it overrides both the dynamic (wallpaper) scheme and the
+/// brand-seed fallback, since a deliberate in-app choice should win over
+/// either automatic behavior.
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light(ColorScheme? dynamicLight) {
-    final scheme = (dynamicLight ?? _fallbackScheme(Brightness.light))
-        .harmonized();
+  static ThemeData light(ColorScheme? dynamicLight, {Color? accentSeed}) {
+    final scheme = accentSeed != null
+        ? ColorScheme.fromSeed(seedColor: accentSeed, brightness: Brightness.light)
+        : (dynamicLight ?? _fallbackScheme(Brightness.light)).harmonized();
     return _themeFrom(scheme);
   }
 
-  static ThemeData dark(ColorScheme? dynamicDark) {
-    final scheme = (dynamicDark ?? _fallbackScheme(Brightness.dark))
-        .harmonized();
+  static ThemeData dark(ColorScheme? dynamicDark, {Color? accentSeed}) {
+    final scheme = accentSeed != null
+        ? ColorScheme.fromSeed(seedColor: accentSeed, brightness: Brightness.dark)
+        : (dynamicDark ?? _fallbackScheme(Brightness.dark)).harmonized();
     return _themeFrom(scheme, pureBlack: true);
   }
 
