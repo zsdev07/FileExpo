@@ -25,6 +25,9 @@ dependencies:
   # Built-in viewers: video and audio playback for local files.
   video_player: ^2.9.0
   audioplayers: ^6.1.0
+  # Persists Settings (theme, accent color, compact view, Recycle Bin
+  # prefs) across app restarts.
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   flutter_test:
