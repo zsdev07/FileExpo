@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- path="." covers all of primary external storage — the same
+         access FileExpo already has via MANAGE_EXTERNAL_STORAGE. This
+         isn't an extra permission grant, just a URI-wrapping mechanism
+         Android requires for sharing a file with another app. -->
+    <external-path name="external_files" path="." />
+</paths>
