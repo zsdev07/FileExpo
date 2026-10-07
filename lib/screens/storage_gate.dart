@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/settings_store.dart';
 import '../services/storage_access_service.dart';
 import 'home_screen.dart';
 import 'permission_gate_screen.dart';
+import 'tabs_host.dart';
 
 /// Wraps [HomeScreen] and keeps it hidden behind [PermissionGateScreen]
 /// until FileExpo actually has storage access. The all-files-access grant
@@ -70,6 +72,13 @@ class _StorageGateState extends State<StorageGate>
         requesting: _requesting,
       );
     }
-    return const HomeScreen();
+    // Reacts live to Settings > MultiTasking & Navigation > "Enable tabs"
+    // — no restart needed to switch shells.
+    return ListenableBuilder(
+      listenable: SettingsStore.instance,
+      builder: (context, _) => SettingsStore.instance.tabsEnabled
+          ? const TabsHost()
+          : const HomeScreen(),
+    );
   }
 }
