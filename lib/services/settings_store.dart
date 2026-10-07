@@ -54,6 +54,8 @@ class SettingsStore extends ChangeNotifier {
   static const _keyHideFileExtensions = 'settings.hideFileExtensions';
   static const _keyShowFolderSizes = 'settings.showFolderSizes';
   static const _keyDefaultLaunchPath = 'settings.defaultLaunchPath';
+  static const _keyTabsEnabled = 'settings.tabsEnabled';
+  static const _keySessionRestoreEnabled = 'settings.sessionRestoreEnabled';
 
   AppThemeMode _themeMode = AppThemeMode.system;
   AppThemeMode get themeMode => _themeMode;
@@ -88,6 +90,15 @@ class SettingsStore extends ChangeNotifier {
   String? _defaultLaunchPath;
   String? get defaultLaunchPath => _defaultLaunchPath;
 
+  /// Off by default — this changes the app's whole navigation shell
+  /// (StorageGate shows TabsHost instead of a single HomeScreen), so it
+  /// doesn't flip on silently for existing users.
+  bool _tabsEnabled = false;
+  bool get tabsEnabled => _tabsEnabled;
+
+  bool _sessionRestoreEnabled = true;
+  bool get sessionRestoreEnabled => _sessionRestoreEnabled;
+
   bool _loaded = false;
   bool get loaded => _loaded;
 
@@ -111,6 +122,8 @@ class SettingsStore extends ChangeNotifier {
     _hideFileExtensions = prefs.getBool(_keyHideFileExtensions) ?? false;
     _showFolderSizes = prefs.getBool(_keyShowFolderSizes) ?? false;
     _defaultLaunchPath = prefs.getString(_keyDefaultLaunchPath);
+    _tabsEnabled = prefs.getBool(_keyTabsEnabled) ?? false;
+    _sessionRestoreEnabled = prefs.getBool(_keySessionRestoreEnabled) ?? true;
 
     _loaded = true;
     notifyListeners();
@@ -182,5 +195,19 @@ class SettingsStore extends ChangeNotifier {
     } else {
       await prefs.setString(_keyDefaultLaunchPath, path);
     }
+  }
+
+  Future<void> setTabsEnabled(bool value) async {
+    _tabsEnabled = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyTabsEnabled, value);
+  }
+
+  Future<void> setSessionRestoreEnabled(bool value) async {
+    _sessionRestoreEnabled = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keySessionRestoreEnabled, value);
   }
 }
