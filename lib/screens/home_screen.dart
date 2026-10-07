@@ -30,7 +30,17 @@ import 'viewers/video_viewer_screen.dart';
 import 'viewers/zip_preview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Overrides Settings > Files & Folders > "Default launch path" for
+  /// this specific instance — used by [TabsHost] to restore a tab to
+  /// wherever it was last browsing. Null falls back to that setting.
+  final String? initialPath;
+
+  /// Called with the current folder's full path every time a listing
+  /// loads successfully, so [TabsHost] can track and persist where each
+  /// tab is for session restore.
+  final ValueChanged<String>? onPathChanged;
+
+  const HomeScreen({super.key, this.initialPath, this.onPathChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -72,10 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final root = await _storageService.getRootPath();
     _pathStack = [root];
 
-    // Settings > Files & Folders > "Default launch path" — only used if
-    // it still actually exists; falls back to the root silently otherwise
-    // rather than erroring on first launch.
-    final customStart = SettingsStore.instance.defaultLaunchPath;
+    // A tab being restored to where it was last browsing takes priority
+    // over the app-wide default launch path; both are only used if the
+    // folder still actually exists, falling back to root silently
+    // otherwise rather than erroring on launch.
+    final customStart = widget.initialPath ?? SettingsStore.instance.defaultLaunchPath;
     if (customStart != null &&
         customStart != root &&
         customStart.startsWith(root) &&
@@ -106,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _entries = entries;
         _loading = false;
       });
+      widget.onPathChanged?.call(_pathStack.last);
     } catch (e) {
       if (!mounted) return;
       setState(() {
