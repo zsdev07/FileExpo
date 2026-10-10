@@ -17,6 +17,7 @@ import android.os.Environment
 import android.os.Process
 import android.os.StatFs
 import android.os.storage.StorageManager
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -42,6 +43,10 @@ import java.io.File
  *    special permission — and triggering the system uninstall dialog.
  *  - the APK Installer: wrapping a .apk path as a content:// URI (via
  *    [FileProvider]) and firing the system's own install confirmation.
+ *  - "Default File Manager": resolving whatever file/content URI FileExpo
+ *    was opened with (from another app's "Open with" / "Share" chooser)
+ *    back into a real path our viewers can use, plus a shortcut to this
+ *    app's system App Info settings.
  */
 class MainActivity : FlutterActivity() {
     private val channelName = "zx.offical.fexpo/storage"
@@ -161,9 +166,110 @@ class MainActivity : FlutterActivity() {
                         }
                     }
 
+                    "getLaunchIntentPath" -> {
+                        val uri = incomingUri()
+                        // One-shot: clear the intent once read, so coming back
+                        // to the app later doesn't re-open the same file. A
+                        // genuinely new "Open with" arrives via onNewIntent,
+                        // which sets a fresh one.
+                        setIntent(Intent())
+                        if (uri == null) {
+                            result.success(null)
+                        } else {
+                            // Resolving a content:// URI (copying its bytes,
+                            // for anything not from our own FileProvider)
+                            // does real I/O, so keep it off the main thread
+                            // like the other heavier calls above.
+                            Thread {
+                                val resolved = resolveUriToFile(uri)
+                                runOnUiThread { result.success(resolved) }
+                            }.start()
+                        }
+                    }
+
+                    "openAppInfoSettings" -> {
+                        try {
+                            val settingsIntent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:$packageName")
+                            )
+                            startActivity(settingsIntent)
+                            result.success(null)
+                        } catch (e: Exception) {
+                            result.error("SETTINGS_FAILED", e.message, null)
+                        }
+                    }
+
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    // Lets a later `getLaunchIntentPath` call (after the app is already
+    // running) see the new intent instead of the one it originally
+    // launched with — tapping a second "Open with FileExpo" while the
+    // app is already open.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    // "Open with" (ACTION_VIEW) puts the file in intent.data; "Share"
+    // (ACTION_SEND) puts it in the EXTRA_STREAM extra instead — checking
+    // only one of them would silently ignore the other kind of launch.
+    private fun incomingUri(): Uri? {
+        val current = intent ?: return null
+        current.data?.let { return it }
+        if (current.action == Intent.ACTION_SEND) {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                current.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                current.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            }
+        }
+        return null
+    }
+
+    // file:// URIs already give us a real filesystem path. content://
+    // URIs (the common case from other apps' share sheets / providers)
+    // don't always resolve to one, so those are copied into our app's
+    // private cache instead — our viewers only know how to open plain
+    // file paths, not arbitrary content streams.
+    private fun resolveUriToFile(uri: Uri): String? {
+        return when (uri.scheme) {
+            "file" -> uri.path
+            "content" -> copyContentUriToCache(uri)
+            else -> null
+        }
+    }
+
+    private fun copyContentUriToCache(uri: Uri): String? {
+        return try {
+            // File(name).name strips any directory parts, so a provider
+            // can't hand us something like "../../x" and make us write
+            // outside the cache folder.
+            val safeName = File(queryDisplayName(uri) ?: "shared_file").name
+                .ifEmpty { "shared_file" }
+            val outFile = File(cacheDir, safeName)
+            contentResolver.openInputStream(uri)?.use { input ->
+                outFile.outputStream().use { output -> input.copyTo(output) }
+            } ?: return null
+            outFile.absolutePath
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun queryDisplayName(uri: Uri): String? {
+        return try {
+            contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex >= 0 && cursor.moveToFirst()) cursor.getString(nameIndex) else null
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     @Suppress("DEPRECATION")
